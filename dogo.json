@@ -4,8 +4,10 @@
   "SourceDir": [
     "."
   ],
-  "SourceExt": [".c", ".cpp", ".go", ".h"],
-  "BuildCmd": "",
+  "SourceExt": [".c", ".cpp", ".go", ".h", "dogo.json"],
+  "BuildCmd": "reset",
   "RunCmd": "go run main.go",
   "Decreasing": 1
 }
+
+
