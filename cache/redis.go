@@ -5,6 +5,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+var redisURL string
+
 func getRedisClient() (redigoRedis.Conn, error) {
-	return redigoRedis.DialURL(viper.GetString("REDIS_URL"))
+	redisURL = viper.GetString("REDIS_URL")
+	// debug.Print("cache.getRedisClient.redisURL", redisURL)
+	return redigoRedis.DialURL(redisURL)
 }

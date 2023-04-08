@@ -3,7 +3,7 @@ package github
 import (
 	"net/http"
 
-	githubSDK "github.com/google/go-github/v33/github"
+	githubSDK "github.com/google/go-github/v50/github"
 	log "github.com/sirupsen/logrus"
 )
 

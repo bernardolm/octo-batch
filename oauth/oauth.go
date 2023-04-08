@@ -2,18 +2,17 @@ package oauth
 
 import (
 	"github.com/bernardolm/octo-batch/cache"
-	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
 )
 
-func GetOAuth2Transport() (*oauth2.Transport, error) {
+func GetOAuth2Transport(token string) (*oauth2.Transport, error) {
 	httpcacheTransport, err := cache.GetRedisHTTPCacheTransport()
 	if err != nil {
 		return nil, err
 	}
 
 	tk := &oauth2.Token{
-		AccessToken: viper.GetString("GITHUB_TOKEN"),
+		AccessToken: token,
 	}
 	ts := oauth2.StaticTokenSource(tk)
 	tsp := &oauth2.Transport{

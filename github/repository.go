@@ -4,9 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/google/go-github/v33/github"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+	"github.com/google/go-github/v50/github"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -25,25 +23,27 @@ func repositoriesListPaginate(ctx context.Context, fn repositoriesListByPageType
 		return nil
 	}
 
-	sem := semaphore.NewWeighted(viper.GetInt64("REPOSITORY_MAX_THREADS"))
+	sem := semaphore.NewWeighted(repositoryMaxThreads)
 
 	for i := 2; i <= lastPage; i++ {
 		wg.Add(1)
 
-		go func(ctx context.Context, i int, ch repositoriesCh) {
+		go func(ctx context.Context, i int, ch repositoriesCh) error {
 			defer wg.Done()
 
 			if err := sem.Acquire(ctx, 1); err != nil {
-				log.Panic(err)
+				return err
 			}
 			defer sem.Release(1)
 
 			r, _, err := fn(ctx, i)
 			if err != nil {
-				log.Panic(err)
+				return err
 			}
 
 			ch <- r
+
+			return nil
 		}(ctx, i, ch)
 	}
 
@@ -54,11 +54,16 @@ func repositoriesListByPage(ctx context.Context, page int) ([]*github.Repository
 	opt := &github.RepositoryListOptions{
 		ListOptions: github.ListOptions{
 			Page:    page,
-			PerPage: viper.GetInt("REPOSITORY_PER_PAGE"),
+			PerPage: repositoryPerPage,
 		},
 	}
 
-	result, resp, err := getClient().Repositories.List(ctx, viper.GetString("GITHUB_USERNAME"), opt)
+	c, err := getClient()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	result, resp, err := c.Repositories.List(ctx, username, opt)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -97,11 +102,16 @@ func repositoriesListByOrgByPage(ctx context.Context, page int) ([]*github.Repos
 	opt := &github.RepositoryListByOrgOptions{
 		ListOptions: github.ListOptions{
 			Page:    page,
-			PerPage: viper.GetInt("REPOSITORY_PER_PAGE"),
+			PerPage: repositoryPerPage,
 		},
 	}
 
-	result, resp, err := getClient().Repositories.ListByOrg(ctx, viper.GetString("GITHUB_ORG"), opt)
+	c, err := getClient()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	result, resp, err := c.Repositories.ListByOrg(ctx, org, opt)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -155,7 +165,7 @@ func RepositoriesListAll(ctx context.Context) ([]*github.Repository, error) {
 
 	for _, fn := range fns {
 		if err := fn(ctx, ch, wg); err != nil {
-			log.Panic(err)
+			return nil, err
 		}
 	}
 
